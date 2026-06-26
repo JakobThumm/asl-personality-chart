@@ -6,36 +6,66 @@ A fun "political-compass"-style test for the lab. Two axes:
 - **Chaotic lab ↔ Clean lab** (vertical)
 
 Participants enter a name, pick an emoji, answer Likert questions, and get placed
-on a shared chart. The legend on the right maps emojis to names. **Individual
-answers are never stored or transmitted** — only the final name, emoji, and
-position.
+on a shared chart. The legend on the right maps emojis to names. At the bottom of
+the results page, a **per-question breakdown** shows a diverging stacked bar chart
+of how the lab answered.
 
 ## How it works
 
 - Pure static site (HTML/CSS/vanilla JS), no build step. Hosted on GitHub Pages.
 - The quiz runs entirely in the browser and computes an `(x, y)` position in `[-1, 1]`.
-- On submit, the site opens a **pre-filled GitHub issue** containing only
-  `{name, emoji, x, y}`. The [`record-result`](.github/workflows/record-result.yml)
-  Action parses it, appends to [`data/results.json`](data/results.json), commits,
-  and closes the issue. No API keys live in the page.
-- The chart reads `data/results.json` on load.
+- On submit, the browser calls a Supabase RPC (`submit_result`). No login needed,
+  no new tab, and the chart updates immediately.
+- The chart reads the `results` table; the breakdown reads the `distributions` table.
+
+### Privacy model
+
+Individual answers are **never stored**. The `submit_result()` SQL function folds
+your answers into anonymous per-question counts and discards them:
+
+- `results` table holds only `{name, emoji, x, y}`.
+- `distributions` table holds only per-question counts
+  (`[strongly disagree, disagree, neutral, agree, strongly agree]`). Each
+  question's total equals the number of participants (counted once, on first
+  submission; retakes move the dot but do not change the distribution).
+- The public `anon` key in [`js/config.js`](js/config.js) is meant to be public.
+  Row Level Security blocks direct table writes, and there is no answer data to
+  read, so the key cannot expose anything beyond the chart itself.
 
 ## Setup (one time)
 
+### 1. Create the Supabase backend (free)
+
+1. Create a project at <https://supabase.com> (free tier is plenty).
+2. Open *SQL Editor → New query*, paste all of
+   [`supabase/schema.sql`](supabase/schema.sql), and **Run**. This creates the
+   tables, the security policies, and the `submit_result` function.
+3. Open *Project Settings → API* and copy the **Project URL** and the **anon
+   public** key into [`js/config.js`](js/config.js):
+
+   ```js
+   window.CONFIG = {
+     SUPABASE_URL: "https://YOUR-PROJECT.supabase.co",
+     SUPABASE_ANON_KEY: "eyJ...your-anon-key...",
+   };
+   ```
+
+Until both are filled in, the site runs in view-only mode (empty chart, submit
+shows a friendly "sharing isn't set up yet" message).
+
+### 2. Host on GitHub Pages
+
 1. **Push this repo** to `github.com/JakobThumm/asl-personality-chart`
-   (already the `origin` remote). If you fork/rename, update `REPO` in
-   [`js/config.js`](js/config.js).
-2. **Enable GitHub Pages**: repo *Settings → Pages → Build and deployment →
-   Source: "Deploy from a branch" → Branch: `main` / `/ (root)`*.
+   (already the `origin` remote).
+2. **Enable Pages**: *Settings → Pages → Build and deployment → Source: "Deploy
+   from a branch" → Branch: `main` / `/ (root)`*.
    Site will be at `https://jakobthumm.github.io/asl-personality-chart/`.
-3. **Allow the Action to commit**: *Settings → Actions → General → Workflow
-   permissions → "Read and write permissions"*. (The workflow also declares the
-   needed permissions explicitly.)
-4. *(Optional)* Create a label named `result` (*Issues → Labels → New label*).
-   Not required — the workflow also matches issues whose title starts with
-   `result:`.
 
 That's it. Share the Pages URL with the lab.
+
+> **Note:** `config.js` ships your anon key in a public repo. That is by design —
+> Supabase anon keys are public client keys, and the schema's Row Level Security is
+> what protects the data. Do **not** put the `service_role` key anywhere in this repo.
 
 ## Editing the questions
 
@@ -65,7 +95,14 @@ python3 -m http.server 8000
 # then open http://localhost:8000
 ```
 
-## Resetting / removing an entry
+With Supabase configured, local submissions write to the same shared backend.
 
-Edit [`data/results.json`](data/results.json) directly and commit. Each person
-is keyed by name (case-insensitive); retaking the test overwrites their spot.
+## Resetting / removing data
+
+Use the Supabase *Table Editor* (or SQL Editor):
+
+- Remove a person: delete their row from `results`.
+- Reset everything: `truncate results; truncate distributions;`
+- **If you change the questions**, also `truncate distributions;` so the counts
+  realign with the new question list (the distribution is indexed by question
+  position).

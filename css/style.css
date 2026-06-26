@@ -250,6 +250,62 @@ h3 { margin: 0 0 14px; }
 .legend-item.me { background: rgba(0,210,168,0.12); }
 .legend-empty { color: var(--muted); font-size: 0.9rem; }
 
+/* ---------- Per-question breakdown ---------- */
+.breakdown-toggle { text-align: center; margin-top: 18px; }
+.breakdown {
+  margin-top: 16px;
+  background: linear-gradient(180deg, var(--card), var(--bg-2));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+.breakdown h2 { text-align: center; margin-bottom: 4px; }
+.breakdown .subtitle { text-align: center; }
+
+.bars-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+  margin: 8px 0 22px;
+}
+.bl-item { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--muted); }
+.bl-swatch { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+
+.bars { display: flex; flex-direction: column; gap: 12px; }
+.bars-empty { color: var(--muted); text-align: center; }
+
+.bar-row { display: grid; grid-template-columns: 1fr 56%; gap: 14px; align-items: center; }
+.bar-q { font-size: 0.86rem; line-height: 1.3; text-align: right; color: var(--ink); }
+.bar-track { position: relative; height: 26px; }
+.bar-zero {
+  position: absolute; left: 50%; top: -3px; bottom: -3px;
+  width: 0; border-left: 1px dashed var(--muted); opacity: 0.7;
+}
+.bar-fill { position: absolute; inset: 0; display: flex; align-items: stretch; }
+.seg-spacer { flex: 0 0 auto; }
+.seg { flex: 0 0 auto; height: 100%; transition: filter 0.12s; }
+.seg:first-of-type { border-radius: 5px 0 0 5px; }
+.seg:last-child { border-radius: 0 5px 5px 0; }
+.seg:hover { filter: brightness(1.15); }
+
+.bar-axis { margin-top: 4px; }
+.axis-ticks { height: 20px; }
+.axis-ticks .tick {
+  position: absolute; top: 0; transform: translateX(-50%);
+  font-size: 0.72rem; color: var(--muted);
+}
+.axis-caption {
+  position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  font-size: 0.74rem; color: var(--muted); white-space: nowrap; margin-top: 2px;
+}
+
+@media (max-width: 640px) {
+  .bar-row { grid-template-columns: 1fr; gap: 4px; }
+  .bar-q { text-align: left; }
+}
+
 /* ---------- Modal ---------- */
 .modal-backdrop {
   position: fixed; inset: 0;

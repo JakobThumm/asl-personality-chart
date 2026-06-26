@@ -1,9 +1,10 @@
-// Site configuration. Update REPO if you fork/rename.
+// Site configuration.
+//
+// Fill these in from your Supabase project: Project Settings -> API.
+// The anon key is designed to be public; Row Level Security (see supabase/schema.sql)
+// is what protects the data. Until both are set, the site runs in "view only / no
+// submit" mode and shows an empty chart.
 window.CONFIG = {
-  // "owner/repo" on GitHub. Used to build the pre-filled issue submission link.
-  REPO: "JakobThumm/asl-personality-chart",
-  // Label the GitHub Action listens for. Must match the workflow.
-  RESULT_LABEL: "result",
-  // Where the committed results live (relative to the site root).
-  RESULTS_PATH: "data/results.json",
+  SUPABASE_URL: "https://YOUR-PROJECT.supabase.co",
+  SUPABASE_ANON_KEY: "YOUR-ANON-KEY",
 };

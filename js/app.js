@@ -2,7 +2,6 @@
 (function () {
   const { QUESTIONS } = window.QUIZ;
   const EMOJIS = window.EMOJIS;
-  const CFG = window.CONFIG;
 
   const LIKERT = [
     { label: "Strongly disagree", v: -1 },
@@ -17,7 +16,8 @@
     emoji: "",
     answers: new Array(QUESTIONS.length).fill(null),
     qIndex: 0,
-    results: [],     // loaded from data/results.json
+    results: [],     // loaded from Supabase (results table)
+    dist: null,      // loaded from Supabase (distributions table)
     takenEmojis: new Set(),
   };
 
@@ -31,21 +31,29 @@
   // ---------- Data loading ----------
   async function loadResults() {
     try {
-      const res = await fetch(`${CFG.RESULTS_PATH}?t=${Date.now()}`, { cache: "no-store" });
-      if (!res.ok) throw new Error(res.status);
-      const data = await res.json();
+      const data = await window.API.getResults();
       state.results = Array.isArray(data) ? data : [];
     } catch (e) {
-      console.warn("Could not load results.json:", e);
+      console.warn("Could not load results:", e);
       state.results = [];
     }
     state.takenEmojis = new Set(state.results.map((r) => r.emoji));
   }
 
+  async function loadDistributions() {
+    try {
+      state.dist = await window.API.getDistributions();
+    } catch (e) {
+      console.warn("Could not load distributions:", e);
+      state.dist = null;
+    }
+  }
+
   // ---------- Intro ----------
   document.getElementById("btn-start").onclick = () => show("screen-name");
   document.getElementById("btn-skip").onclick = async () => {
-    await loadResults();
+    await Promise.all([loadResults(), loadDistributions()]);
+    resetBreakdown();
     renderResults(null);
     show("screen-results");
   };
@@ -165,9 +173,10 @@
   async function finishQuiz() {
     const { x, y } = computeScore();
     state.score = { x, y };
-    await loadResults();
+    await Promise.all([loadResults(), loadDistributions()]);
+    resetBreakdown();
 
-    // Show "me" immediately even before the result is committed to the repo.
+    // Show "me" immediately, even before the submission round-trips.
     const meKey = `${state.name}|${state.emoji}`;
     const withMe = state.results.filter((r) => `${r.name}|${r.emoji}` !== meKey);
     withMe.push({ name: state.name, emoji: state.emoji, x, y });
@@ -195,36 +204,65 @@
     document.getElementById("submit-modal").classList.remove("active");
   }
 
-  function buildIssueUrl() {
+  const submitBtn = document.getElementById("btn-submit-go");
+  submitBtn.onclick = async () => {
     const { x, y } = state.score;
-    const payload = { name: state.name, emoji: state.emoji, x, y };
-    const body =
-      "Submitting my ASL Personality Chart result. " +
-      "Click **Create** below and a bot will add me to the chart.\n\n" +
-      "<!-- ASL-RESULT -->\n" +
-      "```json\n" + JSON.stringify(payload) + "\n```\n";
-    const title = `result: ${state.name} ${state.emoji}`;
-    const base = `https://github.com/${CFG.REPO}/issues/new`;
-    const params = new URLSearchParams({
-      labels: CFG.RESULT_LABEL,
-      title,
-      body,
-    });
-    return `${base}?${params.toString()}`;
-  }
-
-  document.getElementById("btn-submit-github").onclick = () => {
-    window.open(buildIssueUrl(), "_blank", "noopener");
-    document.getElementById("submit-note").textContent =
-      "Thanks! Click \"Create\" on the GitHub page. Your spot appears on the shared chart within a minute.";
-    closeSubmitModal();
-    renderResults(`${state.name}|${state.emoji}`);
-    show("screen-results");
+    const note = document.getElementById("submit-note");
+    submitBtn.disabled = true;
+    note.textContent = "Submitting…";
+    try {
+      await window.API.submit({
+        name: state.name, emoji: state.emoji, x, y, answers: state.answers,
+      });
+      // Re-pull from the server so the chart + breakdown reflect everyone.
+      await Promise.all([loadResults(), loadDistributions()]);
+      const meKey = `${state.name}|${state.emoji}`;
+      const withMe = state.results.filter((r) => `${r.name}|${r.emoji}` !== meKey);
+      withMe.push({ name: state.name, emoji: state.emoji, x, y });
+      state.displayResults = withMe;
+      breakdownRendered = false; // re-render breakdown with fresh data on next open
+      closeSubmitModal();
+      renderResults(meKey);
+      show("screen-results");
+    } catch (e) {
+      console.error(e);
+      note.textContent = window.API.configured
+        ? "Couldn't submit right now. You can still view the chart."
+        : "Sharing isn't set up yet (no Supabase config). Showing your result locally.";
+    } finally {
+      submitBtn.disabled = false;
+    }
   };
   document.getElementById("btn-submit-skip").onclick = () => {
     closeSubmitModal();
     renderResults(`${state.name}|${state.emoji}`);
     show("screen-results");
+  };
+
+  // ---------- Per-question breakdown ----------
+  const breakdownEl = document.getElementById("breakdown");
+  const breakdownBtn = document.getElementById("btn-breakdown");
+  let breakdownRendered = false;
+
+  function resetBreakdown() {
+    breakdownEl.hidden = true;
+    breakdownBtn.setAttribute("aria-expanded", "false");
+    breakdownBtn.textContent = "Show per-question breakdown ▾";
+    breakdownRendered = false;
+  }
+
+  breakdownBtn.onclick = () => {
+    const open = breakdownEl.hidden;
+    if (open) {
+      if (!breakdownRendered) { window.BARS.render(state.dist); breakdownRendered = true; }
+      breakdownEl.hidden = false;
+      breakdownBtn.setAttribute("aria-expanded", "true");
+      breakdownBtn.textContent = "Hide per-question breakdown ▴";
+    } else {
+      breakdownEl.hidden = true;
+      breakdownBtn.setAttribute("aria-expanded", "false");
+      breakdownBtn.textContent = "Show per-question breakdown ▾";
+    }
   };
 
   // ---------- Restart ----------
