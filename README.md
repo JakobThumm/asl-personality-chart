@@ -103,6 +103,7 @@ Use the Supabase *Table Editor* (or SQL Editor):
 
 - Remove a person: delete their row from `results`.
 - Reset everything: `truncate results; truncate distributions;`
-- **If you change the questions**, also `truncate distributions;` so the counts
-  realign with the new question list (the distribution is indexed by question
-  position).
+- **If you change the questions**, run `truncate results; truncate distributions;`
+  (both). Old dots were computed against the old questions, and because a person's
+  distribution contribution is locked at their first submission, only a full reset
+  lets everyone be counted as new again and repopulate the breakdown.
