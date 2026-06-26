@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASL Personality Chart</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧪</text></svg>" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- ============ INTRO ============ -->
+    <section class="screen active" id="screen-intro">
+      <div class="card">
+        <h1>The ASL Personality Chart</h1>
+        <p class="subtitle">A very scientific* assessment of your lab persona.</p>
+        <p class="axes-blurb">
+          Find out where you land between
+          <b>yapping</b> &amp; <b>locked in</b>, and between a
+          <b>chaotic lab</b> &amp; a <b>clean lab</b>.
+        </p>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btn-start">Take the test</button>
+          <button class="btn btn-ghost" id="btn-skip">Jump to results</button>
+        </div>
+        <p class="footnote">*not actually scientific</p>
+      </div>
+    </section>
+
+    <!-- ============ NAME ============ -->
+    <section class="screen" id="screen-name">
+      <div class="card">
+        <h2>What's your name?</h2>
+        <input type="text" id="input-name" maxlength="24" placeholder="e.g. Ada Lovelace" autocomplete="off" />
+        <p class="error" id="name-error"></p>
+        <div class="btn-row">
+          <button class="btn btn-ghost" data-back>Back</button>
+          <button class="btn btn-primary" id="btn-name-next">Next</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ EMOJI ============ -->
+    <section class="screen" id="screen-emoji">
+      <div class="card">
+        <h2>Pick your emoji</h2>
+        <p class="subtitle">This is how you'll appear on the chart.</p>
+        <div class="emoji-grid" id="emoji-grid"></div>
+        <p class="error" id="emoji-error"></p>
+        <div class="btn-row">
+          <button class="btn btn-ghost" data-back>Back</button>
+          <button class="btn btn-primary" id="btn-emoji-next">Next</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ QUESTIONS ============ -->
+    <section class="screen" id="screen-quiz">
+      <div class="card quiz-card">
+        <div class="progress">
+          <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <p class="q-counter" id="q-counter"></p>
+        <h2 class="q-text" id="q-text"></h2>
+        <div class="likert" id="likert"></div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" id="btn-quiz-back">Back</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ RESULTS ============ -->
+    <section class="screen" id="screen-results">
+      <div class="results-layout">
+        <div class="chart-wrap">
+          <h2 id="results-title">The Lab</h2>
+          <div class="chart" id="chart"></div>
+          <p class="chart-hint" id="chart-hint"></p>
+        </div>
+        <aside class="legend-wrap">
+          <h3>Legend</h3>
+          <div class="legend" id="legend"></div>
+          <button class="btn btn-ghost btn-small" id="btn-restart">Take it again</button>
+        </aside>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Submission modal -->
+  <div class="modal-backdrop" id="submit-modal">
+    <div class="modal">
+      <h3>You're <span id="modal-emoji"></span> on the chart!</h3>
+      <p>To add yourself to the lab's shared chart, submit your result. This opens
+         a pre-filled GitHub page. Your <b>answers are never sent</b>, only your
+         name, emoji, and final position.</p>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-submit-github">Submit my result</button>
+        <button class="btn btn-ghost" id="btn-submit-skip">Just show me the chart</button>
+      </div>
+      <p class="footnote" id="submit-note"></p>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/emojis.js"></script>
+  <script src="js/questions.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
